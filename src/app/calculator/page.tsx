@@ -72,7 +72,6 @@ function CalculatorInner() {
 
   const [zoneName, setZoneName] = useState(initialZone?.name ?? "계획관리지역");
   const [productName, setProductName] = useState(initialProduct.name);
-  const product = PRODUCT_TYPES.find((p) => p.name === productName)!;
   const [downloading, setDownloading] = useState(false);
 
   const [input, setInput] = useState<FeasibilityInput>({
@@ -98,10 +97,7 @@ function CalculatorInner() {
     drawdownRatio: DEFAULT_INPUT_RATIOS.drawdownRatio,
   });
 
-  // 상품-용도지역 통상 입지 불일치 경고 (법적 판단이 아닌 참고용)
-  const zoneMismatch = !product.zoneKeywords.some((k) => zoneName.includes(k));
-
-  const set = <K extends keyof FeasibilityInput>(k: K, v: FeasibilityInput[K]) =>
+  const set =<K extends keyof FeasibilityInput>(k: K, v: FeasibilityInput[K]) =>
     setInput((prev) => ({ ...prev, [k]: v }));
 
   const r = useMemo(() => calcFeasibility(input), [input]);
@@ -129,10 +125,8 @@ function CalculatorInner() {
         <div>
           <p className={sectionCls}>FEASIBILITY STUDY</p>
           <h1 className="mt-1 text-[22px] font-bold tracking-tight text-slate-900">약식 사업수지 분석</h1>
-          <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-slate-500">
-            개발사업 초기 검토 단계의 약식 수지 모델입니다. 용도지역 선택 시 국토계획법
-            시행령상 상한 건폐율·용적률이 기본 적용되며, 실제 적용치는 지자체 조례에 따라
-            하향될 수 있습니다. 금액 단위: 만원.
+          <p className="mt-2 text-[13px] text-slate-500">
+            단위: 만원, 평 · 용도지역 선택 시 법정 상한 용적률 자동 적용 (조례 하향 가능)
           </p>
         </div>
         <button
@@ -150,7 +144,7 @@ function CalculatorInner() {
           <div className="space-y-3">
             <h2 className={sectionCls}>PRODUCT</h2>
             <label className="flex flex-col gap-1 text-sm">
-              <span className={labelCls}>개발 상품 (선택 시 공사비·분양비율·판매비율·사업기간 기준값 적용)</span>
+              <span className={labelCls}>개발 상품 (원가·기간 기준값 적용)</span>
               <select
                 className={inputCls}
                 value={productName}
@@ -171,14 +165,6 @@ function CalculatorInner() {
                 ))}
               </select>
             </label>
-            <p className="text-[12px] leading-relaxed text-slate-400">{product.note}</p>
-            {zoneMismatch && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800">
-                {productName}은(는) 통상 {product.zoneKeywords.join("·")} 계열 용도지역에서
-                검토되는 상품입니다. 현재 선택된 &lsquo;{zoneName}&rsquo;에서는 건축이
-                제한되거나 별도 인허가 검토가 필요할 수 있습니다.
-              </p>
-            )}
           </div>
 
           <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -214,9 +200,8 @@ function CalculatorInner() {
               <NumField label="판매비율 (분양수입 대비)" value={input.salesCostRatio * 100} onChange={(v) => set("salesCostRatio", v / 100)} suffix="%" />
             </div>
             {fromDeal && (
-              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-800">
-                선택하신 실거래 건의 거래가격(평당 {dealPrice.toLocaleString()}만원)이
-                토지 매입단가에 자동 반영되었습니다. 협상가·희망가 기준으로 직접 수정할 수 있습니다.
+              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800">
+                실거래가 평당 {dealPrice.toLocaleString()}만원 반영 (수정 가능)
               </p>
             )}
           </div>
@@ -227,11 +212,6 @@ function CalculatorInner() {
               <NumField label="부담금·인허가비율 (토지+공사 대비)" value={input.permitRatio * 100} onChange={(v) => set("permitRatio", v / 100)} suffix="%" step={0.5} />
               <NumField label="예비비율 (토지+공사 대비)" value={input.reserveRatio * 100} onChange={(v) => set("reserveRatio", v / 100)} suffix="%" />
             </div>
-            <p className="text-[12px] leading-relaxed text-slate-400">
-              부담금·인허가비는 학교용지부담금, 광역교통시설부담금, 인허가 용역비 등을
-              포괄하는 개산치입니다. 규모·지역에 따라 편차가 크므로 본검토 시 개별 산정이
-              필요합니다.
-            </p>
           </div>
 
           <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -246,11 +226,6 @@ function CalculatorInner() {
               <NumField label="PF 취급수수료율" value={input.pfFeeRatio * 100} onChange={(v) => set("pfFeeRatio", v / 100)} suffix="%" step={0.1} />
               <NumField label="총 사업기간 (브릿지 포함)" value={input.periodMonths} onChange={(v) => set("periodMonths", v)} suffix="개월" />
             </div>
-            <p className="text-[12px] leading-relaxed text-slate-400">
-              브릿지론으로 토지를 선매입한 뒤 본PF 기표 시 상환(리파이낸싱)하는 통상
-              구조를 가정합니다. 본PF 이자는 대출원금 × 평균 인출률 × 금리 ×
-              (총 사업기간 − 브릿지 기간)으로 계산합니다.
-            </p>
           </div>
         </div>
 
@@ -381,16 +356,13 @@ function CalculatorInner() {
           </div>
 
           {r.marginOnCost < 0.1 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] leading-relaxed text-amber-800">
-              사업이익률이 10%를 하회합니다. 통상적인 PF 심사 기준상 사업성 확보가
-              어려운 수준으로, 분양가·토지비·공사비 가정에 대한 재검토가 필요합니다.
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-[12px] text-amber-800">
+              사업이익률 10% 하회 — 분양가·원가 가정 재검토 필요
             </div>
           )}
 
           <p className="text-[11px] leading-relaxed text-slate-400">
-            본 산출 결과는 약식 추정치로서 취득세 외 세부 세금·부가가치세가 반영되지
-            않았으며, 투자 판단의 근거로 사용될 수 없습니다. 엑셀 모델은 가정 셀 수정 시
-            산출부·민감도표가 함께 재계산되도록 수식으로 작성되어 있습니다.
+            약식 추정치 · 취득세 외 세금·부가세 미반영 · 투자 판단의 근거로 사용 불가
           </p>
         </div>
       </div>
