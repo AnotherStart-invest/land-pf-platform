@@ -66,9 +66,11 @@ function CalculatorInner() {
   // API 용도지역 명칭("계획관리" 등)과 법정 명칭("계획관리지역")의 표기 차이를 흡수해 매칭
   const initialZone = findZoneRule(sp.get("zone"));
   const initialProduct = PRODUCT_TYPES[0];
+  // 실거래 조회에서 넘어온 경우 — 토지 매입단가에 해당 건 거래가 자동 반영 (수정 가능)
+  const dealPrice = Number(sp.get("landPrice"));
+  const fromDeal = dealPrice > 0;
 
   const [zoneName, setZoneName] = useState(initialZone?.name ?? "계획관리지역");
-  const zone = ZONE_RULES.find((z) => z.name === zoneName)!;
   const [productName, setProductName] = useState(initialProduct.name);
   const product = PRODUCT_TYPES.find((p) => p.name === productName)!;
   const [downloading, setDownloading] = useState(false);
@@ -87,7 +89,11 @@ function CalculatorInner() {
     sellRate: DEFAULT_INPUT_RATIOS.sellRate,
     acqCostRatio: DEFAULT_INPUT_RATIOS.acqCostRatio,
     designCostRatio: DEFAULT_INPUT_RATIOS.designCostRatio,
+    permitRatio: DEFAULT_INPUT_RATIOS.permitRatio,
     reserveRatio: DEFAULT_INPUT_RATIOS.reserveRatio,
+    bridgeLtv: DEFAULT_INPUT_RATIOS.bridgeLtv,
+    bridgeRate: DEFAULT_INPUT_RATIOS.bridgeRate,
+    bridgeMonths: DEFAULT_INPUT_RATIOS.bridgeMonths,
     pfFeeRatio: DEFAULT_INPUT_RATIOS.pfFeeRatio,
     drawdownRatio: DEFAULT_INPUT_RATIOS.drawdownRatio,
   });
@@ -104,7 +110,7 @@ function CalculatorInner() {
   const costParts = [
     { name: "토지비·취득", value: r.landCost + r.acqCost, color: "bg-emerald-900" },
     { name: "공사비·설계", value: r.constructionCost + r.designCost, color: "bg-emerald-600" },
-    { name: "예비비·판매비", value: r.reserveCost + r.salesCost, color: "bg-emerald-300" },
+    { name: "부담금·예비비·판매비", value: r.permitCost + r.reserveCost + r.salesCost, color: "bg-emerald-300" },
     { name: "금융비용", value: r.financeCost, color: "bg-amber-500" },
   ];
 
@@ -190,7 +196,7 @@ function CalculatorInner() {
               >
                 {ZONE_RULES.map((z) => (
                   <option key={z.name} value={z.name}>
-                    {z.name} (건폐율 {z.bcr * 100}% / 용적률 {z.far * 100}%)
+                    {z.name} (법정 용적률 상한 {z.far * 100}%)
                   </option>
                 ))}
               </select>
@@ -200,36 +206,57 @@ function CalculatorInner() {
               <NumField label="적용 용적률" value={input.far * 100} onChange={(v) => set("far", v / 100)} suffix="%" step={10} />
               <NumField label="분양가능면적 비율" value={input.salableRatio * 100} onChange={(v) => set("salableRatio", v / 100)} suffix="%" step={5} />
               <NumField label="분양률" value={input.sellRate * 100} onChange={(v) => set("sellRate", v / 100)} suffix="%" step={5} />
-              <NumField label="토지 매입단가" value={input.landPricePerPyeong} onChange={(v) => set("landPricePerPyeong", v)} suffix="만/평" step={10} />
+              <NumField label={fromDeal ? "토지 매입단가 (실거래 반영)" : "토지 매입단가"} value={input.landPricePerPyeong} onChange={(v) => set("landPricePerPyeong", v)} suffix="만/평" step={10} />
               <NumField label="취득부대비율 (토지비 대비)" value={input.acqCostRatio * 100} onChange={(v) => set("acqCostRatio", v / 100)} suffix="%" step={0.1} />
               <NumField label="공사비 (연면적 기준)" value={input.constCostPerPyeong} onChange={(v) => set("constCostPerPyeong", v)} suffix="만/평" step={10} />
               <NumField label="설계·감리비율 (공사비 대비)" value={input.designCostRatio * 100} onChange={(v) => set("designCostRatio", v / 100)} suffix="%" />
               <NumField label="분양단가 (분양면적 기준)" value={input.salePricePerPyeong} onChange={(v) => set("salePricePerPyeong", v)} suffix="만/평" step={10} />
               <NumField label="판매비율 (분양수입 대비)" value={input.salesCostRatio * 100} onChange={(v) => set("salesCostRatio", v / 100)} suffix="%" />
             </div>
+            {fromDeal && (
+              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-800">
+                선택하신 실거래 건의 거래가격(평당 {dealPrice.toLocaleString()}만원)이
+                토지 매입단가에 자동 반영되었습니다. 협상가·희망가 기준으로 직접 수정할 수 있습니다.
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 border-t border-slate-100 pt-4">
-            <h2 className={sectionCls}>COST &amp; FINANCING</h2>
+            <h2 className={sectionCls}>COST</h2>
             <div className="grid grid-cols-2 gap-3">
+              <NumField label="부담금·인허가비율 (토지+공사 대비)" value={input.permitRatio * 100} onChange={(v) => set("permitRatio", v / 100)} suffix="%" step={0.5} />
               <NumField label="예비비율 (토지+공사 대비)" value={input.reserveRatio * 100} onChange={(v) => set("reserveRatio", v / 100)} suffix="%" />
-              <NumField label="대출비율 (LTC)" value={input.loanRatio * 100} onChange={(v) => set("loanRatio", v / 100)} suffix="%" step={5} />
-              <NumField label="조달금리 (연)" value={input.interestRate * 100} onChange={(v) => set("interestRate", v / 100)} suffix="%" step={0.1} />
-              <NumField label="평균 인출률" value={input.drawdownRatio * 100} onChange={(v) => set("drawdownRatio", v / 100)} suffix="%" step={5} />
-              <NumField label="PF 취급수수료율" value={input.pfFeeRatio * 100} onChange={(v) => set("pfFeeRatio", v / 100)} suffix="%" step={0.1} />
-              <NumField label="사업기간" value={input.periodMonths} onChange={(v) => set("periodMonths", v)} suffix="개월" />
             </div>
             <p className="text-[12px] leading-relaxed text-slate-400">
-              건폐율({zone.bcr * 100}%)은 배치·층수 검토용 참고값이며 수지에는 용적률만
-              반영됩니다. 대출원금은 직접사업비 × LTC로 산정하고, 이자는 평균 인출률을
-              반영해 계산합니다.
+              부담금·인허가비는 학교용지부담금, 광역교통시설부담금, 인허가 용역비 등을
+              포괄하는 개산치입니다. 규모·지역에 따라 편차가 크므로 본검토 시 개별 산정이
+              필요합니다.
+            </p>
+          </div>
+
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <h2 className={sectionCls}>FINANCING — BRIDGE &amp; PF</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <NumField label="브릿지 LTV (토지비+취득 대비)" value={input.bridgeLtv * 100} onChange={(v) => set("bridgeLtv", v / 100)} suffix="%" step={5} />
+              <NumField label="브릿지 금리 (연)" value={input.bridgeRate * 100} onChange={(v) => set("bridgeRate", v / 100)} suffix="%" step={0.5} />
+              <NumField label="브릿지 기간 (본PF 전환까지)" value={input.bridgeMonths} onChange={(v) => set("bridgeMonths", v)} suffix="개월" />
+              <NumField label="본PF 대출비율 (LTC)" value={input.loanRatio * 100} onChange={(v) => set("loanRatio", v / 100)} suffix="%" step={5} />
+              <NumField label="본PF 조달금리 (연)" value={input.interestRate * 100} onChange={(v) => set("interestRate", v / 100)} suffix="%" step={0.1} />
+              <NumField label="평균 인출률" value={input.drawdownRatio * 100} onChange={(v) => set("drawdownRatio", v / 100)} suffix="%" step={5} />
+              <NumField label="PF 취급수수료율" value={input.pfFeeRatio * 100} onChange={(v) => set("pfFeeRatio", v / 100)} suffix="%" step={0.1} />
+              <NumField label="총 사업기간 (브릿지 포함)" value={input.periodMonths} onChange={(v) => set("periodMonths", v)} suffix="개월" />
+            </div>
+            <p className="text-[12px] leading-relaxed text-slate-400">
+              브릿지론으로 토지를 선매입한 뒤 본PF 기표 시 상환(리파이낸싱)하는 통상
+              구조를 가정합니다. 본PF 이자는 대출원금 × 평균 인출률 × 금리 ×
+              (총 사업기간 − 브릿지 기간)으로 계산합니다.
             </p>
           </div>
         </div>
 
         {/* 결과 */}
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">개발이익 (세전)</div>
               <div className={`num mt-1 text-[18px] font-bold ${r.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
@@ -243,12 +270,22 @@ function CalculatorInner() {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+              <div className="text-[11px] text-slate-500">손익분기 분양률 (BEP)</div>
+              <div className={`num mt-1 text-[18px] font-bold ${r.bepSellRate <= 0.85 ? "text-slate-900" : "text-red-600"}`}>
+                {pct(r.bepSellRate)}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">자기자본수익률</div>
               <div className="num mt-1 text-[18px] font-bold text-slate-900">{pct(r.returnOnEquity)}</div>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">연환산 ROE</div>
               <div className="num mt-1 text-[18px] font-bold text-slate-900">{pct(r.annualizedRoe)}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+              <div className="text-[11px] text-slate-500">Equity Multiple</div>
+              <div className="num mt-1 text-[18px] font-bold text-slate-900">{r.equityMultiple.toFixed(2)}x</div>
             </div>
           </div>
 
@@ -264,11 +301,13 @@ function CalculatorInner() {
                   ["취득부대비", `${fmtManwon(r.acqCost)}원`, false],
                   ["공사비", `${fmtManwon(r.constructionCost)}원`, false],
                   ["설계·감리비", `${fmtManwon(r.designCost)}원`, false],
+                  ["부담금·인허가비", `${fmtManwon(r.permitCost)}원`, false],
                   ["예비비", `${fmtManwon(r.reserveCost)}원`, false],
                   ["직접사업비 계", `${fmtManwon(r.directCost)}원`, true],
                   ["판매비", `${fmtManwon(r.salesCost)}원`, false],
-                  ["대출원금 (LTC 기준)", `${fmtManwon(r.loanPrincipal)}원`, false],
-                  ["이자비용", `${fmtManwon(r.interestCost)}원`, false],
+                  ["브릿지론 원금 · 이자", `${fmtManwon(r.bridgePrincipal)}원 · ${fmtManwon(r.bridgeInterest)}원`, false],
+                  ["본PF 대출원금 (LTC 기준)", `${fmtManwon(r.loanPrincipal)}원`, false],
+                  ["본PF 이자비용", `${fmtManwon(r.interestCost)}원`, false],
                   ["PF 수수료", `${fmtManwon(r.pfFee)}원`, false],
                   ["총사업비", `${fmtManwon(r.totalCost)}원`, true],
                   ["자기자본 (Equity)", `${fmtManwon(r.equity)}원`, false],

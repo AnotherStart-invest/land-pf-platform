@@ -40,12 +40,6 @@ export default function RootLayout({
                 사업수지 분석
               </Link>
             </div>
-            <Link
-              href="/explorer"
-              className="ml-auto rounded-full bg-emerald-700 px-5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-700/20"
-            >
-              데이터 조회
-            </Link>
           </nav>
         </header>
         <main className="flex-1">{children}</main>

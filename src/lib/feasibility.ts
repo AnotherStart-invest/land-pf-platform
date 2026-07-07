@@ -154,17 +154,25 @@ export interface FeasibilityInput {
   salePricePerPyeong: number;
   /** 판매비율 — 분양대행·광고 등 (분양수입 대비) */
   salesCostRatio: number;
+  /** 부담금·인허가비율 — 학교용지·광역교통 부담금 등 (토지비+공사비 대비) */
+  permitRatio: number;
   /** 예비비율 (토지비+공사비 대비) */
   reserveRatio: number;
-  /** PF 대출비율 LTC (직접사업비 대비) */
+  /** 브릿지 LTV — 토지비+취득부대비 대비 브릿지론 조달 비중 */
+  bridgeLtv: number;
+  /** 브릿지 금리 (연) */
+  bridgeRate: number;
+  /** 브릿지 기간 (개월) — 토지 매입~본PF 전환 */
+  bridgeMonths: number;
+  /** 본PF 대출비율 LTC (직접사업비 대비) */
   loanRatio: number;
-  /** 조달금리 (연) */
+  /** 본PF 조달금리 (연) */
   interestRate: number;
   /** PF 취급수수료율 (대출원금 대비) */
   pfFeeRatio: number;
-  /** 평균 인출률 — 이자 계산 시 대출원금 중 평균 사용 비중 */
+  /** 평균 인출률 — 본PF 이자 계산 시 대출원금 중 평균 사용 비중 */
   drawdownRatio: number;
-  /** 사업기간 (개월) */
+  /** 총 사업기간 (개월, 브릿지 기간 포함) */
   periodMonths: number;
 }
 
@@ -173,7 +181,11 @@ export const DEFAULT_INPUT_RATIOS = {
   acqCostRatio: 0.046,
   designCostRatio: 0.05,
   salesCostRatio: 0.04,
+  permitRatio: 0.03,
   reserveRatio: 0.02,
+  bridgeLtv: 0.7,
+  bridgeRate: 0.09,
+  bridgeMonths: 9,
   pfFeeRatio: 0.015,
   drawdownRatio: 0.6,
 } as const;
@@ -193,15 +205,21 @@ export interface FeasibilityResult {
   constructionCost: number;
   /** 설계·감리비 (만원) */
   designCost: number;
+  /** 부담금·인허가비 (만원) */
+  permitCost: number;
   /** 예비비 (만원) */
   reserveCost: number;
   /** 직접사업비 합계 (만원) */
   directCost: number;
   /** 판매비 (만원) */
   salesCost: number;
-  /** 대출원금 (만원) */
+  /** 브릿지론 원금 (만원) */
+  bridgePrincipal: number;
+  /** 브릿지 이자 (만원) */
+  bridgeInterest: number;
+  /** 본PF 대출원금 (만원) */
   loanPrincipal: number;
-  /** 이자비용 (만원) */
+  /** 본PF 이자비용 (만원) */
   interestCost: number;
   /** PF 수수료 (만원) */
   pfFee: number;
@@ -221,12 +239,18 @@ export interface FeasibilityResult {
   returnOnEquity: number;
   /** 연환산 자기자본수익률 */
   annualizedRoe: number;
+  /** Equity Multiple = (자기자본+이익) / 자기자본 */
+  equityMultiple: number;
+  /** 손익분기 분양률 — 총원가를 회수하는 최소 분양률 */
+  bepSellRate: number;
 }
 
 /**
  * 수지 계산.
- * - 대출원금은 직접사업비(토지·취득·공사·설계·예비) × LTC — 순환참조 없는 통상 약식 구조
- * - 이자는 대출원금 × 평균 인출률 × 금리 × 기간, 수수료는 원금 기준 일시 부과
+ * - 브릿지론(토지비+취득부대비 × LTV)으로 토지 선조달 후 본PF 전환 상환 가정
+ * - 본PF 대출원금은 직접사업비 × LTC — 순환참조 없는 통상 약식 구조
+ * - 본PF 이자는 원금 × 평균 인출률 × 금리 × (사업기간-브릿지기간)
+ * - BEP 분양률: 분양수입×(1-판매비율) = 직접사업비+금융비용 이 되는 분양률
  */
 export function calcFeasibility(i: FeasibilityInput): FeasibilityResult {
   const grossFloorAreaPyeong = i.landAreaPyeong * i.far;
@@ -237,20 +261,32 @@ export function calcFeasibility(i: FeasibilityInput): FeasibilityResult {
   const acqCost = landCost * i.acqCostRatio;
   const constructionCost = grossFloorAreaPyeong * i.constCostPerPyeong;
   const designCost = constructionCost * i.designCostRatio;
+  const permitCost = (landCost + constructionCost) * i.permitRatio;
   const reserveCost = (landCost + constructionCost) * i.reserveRatio;
-  const directCost = landCost + acqCost + constructionCost + designCost + reserveCost;
+  const directCost =
+    landCost + acqCost + constructionCost + designCost + permitCost + reserveCost;
 
   const salesCost = totalRevenue * i.salesCostRatio;
 
+  const bridgePrincipal = (landCost + acqCost) * i.bridgeLtv;
+  const bridgeInterest = bridgePrincipal * i.bridgeRate * (i.bridgeMonths / 12);
+
+  const pfMonths = Math.max(i.periodMonths - i.bridgeMonths, 0);
   const loanPrincipal = directCost * i.loanRatio;
-  const interestCost = loanPrincipal * i.drawdownRatio * i.interestRate * (i.periodMonths / 12);
+  const interestCost = loanPrincipal * i.drawdownRatio * i.interestRate * (pfMonths / 12);
   const pfFee = loanPrincipal * i.pfFeeRatio;
-  const financeCost = interestCost + pfFee;
+  const financeCost = bridgeInterest + interestCost + pfFee;
 
   const totalCost = directCost + salesCost + financeCost;
   const profit = totalRevenue - totalCost;
   const equity = totalCost - loanPrincipal;
   const years = i.periodMonths / 12;
+
+  const grossSaleValue = salableAreaPyeong * i.salePricePerPyeong;
+  const bepSellRate =
+    grossSaleValue > 0
+      ? (directCost + financeCost) / (grossSaleValue * (1 - i.salesCostRatio))
+      : 0;
 
   return {
     grossFloorAreaPyeong,
@@ -260,9 +296,12 @@ export function calcFeasibility(i: FeasibilityInput): FeasibilityResult {
     acqCost,
     constructionCost,
     designCost,
+    permitCost,
     reserveCost,
     directCost,
     salesCost,
+    bridgePrincipal,
+    bridgeInterest,
     loanPrincipal,
     interestCost,
     pfFee,
@@ -274,6 +313,8 @@ export function calcFeasibility(i: FeasibilityInput): FeasibilityResult {
     equity,
     returnOnEquity: equity > 0 ? profit / equity : 0,
     annualizedRoe: equity > 0 && years > 0 ? profit / equity / years : 0,
+    equityMultiple: equity > 0 ? (equity + profit) / equity : 0,
+    bepSellRate,
   };
 }
 
