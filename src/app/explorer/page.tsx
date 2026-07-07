@@ -61,6 +61,30 @@ export default function ExplorerPage() {
     [rows, dongFilter]
   );
 
+  // 선택된 동의 시세 요약 (이상치 영향을 줄이기 위해 중위값 사용)
+  const dongStats = useMemo(() => {
+    if (!dongFilter || visibleRows.length === 0) return null;
+    const median = (arr: number[]) => {
+      const s = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(s.length / 2);
+      return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+    };
+    const pricesPerPyeong: number[] = [];
+    const areas: number[] = [];
+    for (const r of visibleRows) {
+      const py = sqmToPyeong(r.area_sqm);
+      if (py <= 0) continue;
+      pricesPerPyeong.push(r.deal_amount_manwon / py);
+      areas.push(py);
+    }
+    if (pricesPerPyeong.length === 0) return null;
+    return {
+      count: pricesPerPyeong.length,
+      medianPricePerPyeong: Math.round(median(pricesPerPyeong)),
+      medianAreaPyeong: Math.round(median(areas)),
+    };
+  }, [dongFilter, visibleRows]);
+
   return (
     <div className="flex h-[calc(100vh-57px)] flex-col gap-3 p-3 lg:flex-row">
       {/* 좌측: 필터 + 리스트 */}
@@ -177,6 +201,40 @@ export default function ExplorerPage() {
         <div className="min-h-0 flex-1">
           <KakaoMap center={region.center} regionName={region.name} rows={rows} onSelectDong={setDongFilter} />
         </div>
+        {dongFilter && dongStats && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm">
+            <div className="mb-2 flex items-start justify-between">
+              <h3 className="font-semibold text-blue-900">{dongFilter} 시세 요약</h3>
+              <button className="text-blue-400 hover:text-blue-600" onClick={() => setDongFilter("")}>✕</button>
+            </div>
+            <dl className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <dt className="text-xs text-blue-700/70">거래</dt>
+                <dd className="font-semibold text-blue-900">{dongStats.count}건</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-blue-700/70">중위 평당가</dt>
+                <dd className="font-semibold text-blue-900">{dongStats.medianPricePerPyeong.toLocaleString()}만원</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-blue-700/70">중위 면적</dt>
+                <dd className="font-semibold text-blue-900">{dongStats.medianAreaPyeong.toLocaleString()}평</dd>
+              </div>
+            </dl>
+            <Link
+              href={{
+                pathname: "/calculator",
+                query: {
+                  area: dongStats.medianAreaPyeong,
+                  landPrice: dongStats.medianPricePerPyeong,
+                },
+              }}
+              className="mt-3 block rounded-lg bg-blue-600 px-4 py-2 text-center font-medium text-white hover:bg-blue-500"
+            >
+              이 지역 시세로 사업성 분석 →
+            </Link>
+          </div>
+        )}
         {selected && (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm">
             <div className="mb-2 flex items-start justify-between">
