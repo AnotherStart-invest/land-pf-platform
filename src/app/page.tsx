@@ -7,9 +7,8 @@ export default function Home() {
       <h1 className="text-[26px] font-bold tracking-tight text-slate-900">
         토지 실거래 데이터 · 사업수지 분석
       </h1>
-      <p className="mt-3 text-[14px] leading-relaxed text-slate-500">
-        국토교통부 실거래 신고 자료를 수집·정제하여 권역별 토지 거래를 조회하고,
-        대상 필지 기준 약식 사업수지를 산출하는 개발사업 초기 검토 도구입니다.
+      <p className="mt-3 text-[14px] text-slate-500">
+        국토교통부 실거래 자료 기반 토지 거래 조회 · 약식 사업수지 산출 도구
       </p>
 
       <div className="mt-8 flex gap-2.5">
