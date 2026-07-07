@@ -23,7 +23,7 @@ function pct(v: number): string {
 const inputCls =
   "w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-[13px] text-slate-800 outline-none focus:border-slate-500";
 const labelCls = "text-[11px] font-medium text-slate-500";
-const sectionCls = "text-[11px] font-semibold tracking-[0.15em] text-slate-400";
+const sectionCls = "text-[11px] font-semibold tracking-[0.15em] text-emerald-700";
 
 function NumField({
   label, value, onChange, suffix, step,
@@ -84,10 +84,10 @@ function CalculatorInner() {
   const r = useMemo(() => calcFeasibility(input), [input]);
 
   const costParts = [
-    { name: "토지비", value: r.landCost, color: "bg-slate-800" },
-    { name: "공사비", value: r.constructionCost, color: "bg-slate-500" },
-    { name: "기타사업비", value: r.miscCost, color: "bg-slate-300" },
-    { name: "금융비용", value: r.financeCost, color: "bg-amber-600" },
+    { name: "토지비", value: r.landCost, color: "bg-emerald-900" },
+    { name: "공사비", value: r.constructionCost, color: "bg-emerald-600" },
+    { name: "기타사업비", value: r.miscCost, color: "bg-emerald-300" },
+    { name: "금융비용", value: r.financeCost, color: "bg-amber-500" },
   ];
 
   return (
@@ -102,7 +102,7 @@ function CalculatorInner() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.25fr]">
         {/* 입력 */}
-        <div className="space-y-5 rounded border border-slate-200 bg-white p-5">
+        <div className="space-y-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <div className="space-y-3">
             <h2 className={sectionCls}>PRODUCT</h2>
             <label className="flex flex-col gap-1 text-sm">
@@ -185,26 +185,26 @@ function CalculatorInner() {
 
         {/* 결과 */}
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-px overflow-hidden rounded border border-slate-200 bg-slate-200">
-            <div className="bg-white p-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">개발이익 (세전)</div>
-              <div className={`num mt-1 text-[19px] font-bold ${r.profit >= 0 ? "text-slate-900" : "text-red-600"}`}>
+              <div className={`num mt-1 text-[19px] font-bold ${r.profit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                 {fmtManwon(r.profit)}원
               </div>
             </div>
-            <div className="bg-white p-4">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">사업이익률 (÷총사업비)</div>
               <div className={`num mt-1 text-[19px] font-bold ${r.marginOnCost >= 0.1 ? "text-slate-900" : "text-red-600"}`}>
                 {pct(r.marginOnCost)}
               </div>
             </div>
-            <div className="bg-white p-4">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
               <div className="text-[11px] text-slate-500">자기자본수익률</div>
               <div className="num mt-1 text-[19px] font-bold text-slate-900">{pct(r.returnOnEquity)}</div>
             </div>
           </div>
 
-          <div className="rounded border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
             <h2 className={sectionCls}>PRO FORMA</h2>
             <table className="mt-3 w-full text-[13px]">
               <tbody>
@@ -232,7 +232,7 @@ function CalculatorInner() {
             </table>
           </div>
 
-          <div className="rounded border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
             <h2 className={sectionCls}>COST BREAKDOWN</h2>
             <div className="mt-3 flex h-4 w-full overflow-hidden rounded-sm">
               {costParts.map((p) => (

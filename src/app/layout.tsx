@@ -15,35 +15,57 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
-        <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900">
-          <nav className="mx-auto flex max-w-7xl items-baseline gap-8 px-5 py-3.5 text-sm">
-            <Link href="/" className="flex items-baseline gap-2.5">
-              <span className="text-[15px] font-bold tracking-[0.18em] text-white">
-                LANDSCOPE
+      <body className="flex min-h-full flex-col bg-white text-slate-900">
+        <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-md">
+          <nav className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-6">
+            <Link href="/" className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-700 text-[13px] font-black text-white">
+                L
               </span>
-              <span className="hidden text-[10px] font-medium tracking-[0.14em] text-slate-500 sm:inline">
-                LAND MARKET INTELLIGENCE
+              <span className="text-[17px] font-bold tracking-tight">
+                Land<span className="text-emerald-700">Scope</span>
               </span>
             </Link>
+            <div className="ml-4 hidden items-center gap-7 sm:flex">
+              <Link
+                href="/explorer"
+                className="text-[14px] font-medium text-slate-600 transition-colors hover:text-emerald-700"
+              >
+                실거래 데이터
+              </Link>
+              <Link
+                href="/calculator"
+                className="text-[14px] font-medium text-slate-600 transition-colors hover:text-emerald-700"
+              >
+                사업수지 분석
+              </Link>
+            </div>
             <Link
               href="/explorer"
-              className="text-[13px] font-medium text-slate-300 transition-colors hover:text-white"
+              className="ml-auto rounded-full bg-emerald-700 px-5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-700/20"
             >
-              실거래 데이터
+              데이터 조회
             </Link>
-            <Link
-              href="/calculator"
-              className="text-[13px] font-medium text-slate-300 transition-colors hover:text-white"
-            >
-              사업수지 분석
-            </Link>
-            <span className="ml-auto hidden text-[11px] text-slate-500 md:inline">
-              Source. 국토교통부 실거래가 공개시스템
-            </span>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
+        <footer className="border-t border-slate-100 bg-slate-50">
+          <div className="mx-auto max-w-7xl px-6 py-10">
+            <div className="flex flex-wrap items-baseline justify-between gap-4">
+              <span className="text-[15px] font-bold tracking-tight text-slate-700">
+                Land<span className="text-emerald-700">Scope</span>
+              </span>
+              <span className="text-[12px] text-slate-400">
+                Data. 국토교통부 실거래가 공개시스템 (공공데이터포털)
+              </span>
+            </div>
+            <p className="mt-5 max-w-4xl text-[11px] leading-relaxed text-slate-400">
+              본 서비스는 정보 제공을 목적으로 하며, 특정 부동산의 매입·매각 또는 투자
+              권유를 구성하지 않습니다. 사업수지 산출 결과는 약식 추정치로서 실제
+              사업성과 상이할 수 있으며, 투자 판단의 근거로 사용될 수 없습니다.
+            </p>
+          </div>
+        </footer>
       </body>
     </html>
   );

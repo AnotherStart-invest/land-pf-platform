@@ -90,10 +90,10 @@ export default function ExplorerPage() {
   }, [dongFilter, visibleRows]);
 
   return (
-    <div className="flex h-[calc(100vh-53px)] flex-col gap-2.5 p-2.5 lg:flex-row">
+    <div className="flex h-[calc(100vh-64px)] flex-col gap-2.5 p-2.5 lg:flex-row">
       {/* 좌측: 필터 + 리스트 */}
       <div className="flex min-h-0 flex-1 flex-col gap-2.5">
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-2 rounded border border-slate-200 bg-white px-3.5 py-3">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-2 rounded-xl border border-slate-100 bg-white shadow-sm px-3.5 py-3">
           <label className="flex flex-col gap-1">
             <span className={labelCls}>권역</span>
             <select
@@ -156,7 +156,7 @@ export default function ExplorerPage() {
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-auto rounded border border-slate-200 bg-white">
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-100 bg-white shadow-sm">
           <table className="w-full text-[13px]">
             <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-left text-[11px] font-medium text-slate-500">
               <tr>
@@ -206,14 +206,14 @@ export default function ExplorerPage() {
 
       {/* 우측: 지도 + 상세 패널 */}
       <div className="flex min-h-[400px] w-full flex-col gap-2.5 lg:w-[460px]">
-        <div className="min-h-0 flex-1 overflow-hidden rounded border border-slate-200">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
           <KakaoMap center={region.center} regionName={region.name} rows={rows} onSelectDong={setDongFilter} />
         </div>
         {dongFilter && dongStats && (
-          <div className="rounded border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
             <div className="mb-3 flex items-start justify-between">
               <div>
-                <p className="text-[10px] font-semibold tracking-[0.15em] text-slate-400">AREA SUMMARY</p>
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-emerald-600">AREA SUMMARY</p>
                 <h3 className="mt-0.5 text-[14px] font-bold text-slate-900">{dongFilter}</h3>
               </div>
               <button className="text-slate-300 hover:text-slate-500" onClick={() => setDongFilter("")}>✕</button>
@@ -240,17 +240,17 @@ export default function ExplorerPage() {
                   landPrice: dongStats.medianPricePerPyeong,
                 },
               }}
-              className="mt-3.5 block rounded bg-slate-900 px-4 py-2.5 text-center text-[13px] font-semibold text-white transition-colors hover:bg-slate-700"
+              className="mt-3.5 block rounded-full bg-emerald-700 px-4 py-2.5 text-center text-[13px] font-semibold text-white transition-all hover:bg-emerald-600"
             >
               지역 중위가 기준 사업수지 분석
             </Link>
           </div>
         )}
         {selected && (
-          <div className="rounded border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
             <div className="mb-3 flex items-start justify-between">
               <div>
-                <p className="text-[10px] font-semibold tracking-[0.15em] text-slate-400">PARCEL DETAIL</p>
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-emerald-600">PARCEL DETAIL</p>
                 <h3 className="mt-0.5 text-[14px] font-bold text-slate-900">
                   {selected.umd_nm} {selected.jibun ?? "(지번 비공개)"}
                 </h3>
@@ -280,7 +280,7 @@ export default function ExplorerPage() {
                   zone: selected.use_zone ?? "",
                 },
               }}
-              className="mt-3.5 block rounded bg-slate-900 px-4 py-2.5 text-center text-[13px] font-semibold text-white transition-colors hover:bg-slate-700"
+              className="mt-3.5 block rounded-full bg-emerald-700 px-4 py-2.5 text-center text-[13px] font-semibold text-white transition-all hover:bg-emerald-600"
             >
               본 건 기준 사업수지 분석
             </Link>

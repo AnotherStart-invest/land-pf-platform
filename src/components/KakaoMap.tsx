@@ -78,7 +78,7 @@ export default function KakaoMap({ center, regionName, rows, onSelectDong }: Pro
 
       const el = document.createElement("div");
       el.className =
-        "group flex items-center gap-1 rounded-full bg-slate-900/90 text-white text-[11px] px-2 py-1 shadow-md cursor-pointer whitespace-nowrap hover:bg-slate-700 hover:z-50";
+        "group flex items-center gap-1 rounded-full bg-emerald-950/90 text-white text-[11px] px-2 py-1 shadow-md cursor-pointer whitespace-nowrap hover:bg-emerald-800 hover:z-50";
       el.innerHTML =
         `<b>${shortName}</b><span class="rounded-full bg-white/25 px-1 num">${e.count}</span>` +
         `<span class="hidden group-hover:inline"> 평당 ${e.avgPricePerPyeong.toLocaleString()}만</span>`;
