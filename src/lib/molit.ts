@@ -53,7 +53,7 @@ function parseItems(xml: string, lawdCd: string): LandTransaction[] {
       umd_nm: tag(block, "umdNm", "법정동"),
       jibun: tag(block, "jibun", "지번"),
       jimok: tag(block, "jimok", "지목"),
-      use_zone: tag(block, "useZone", "용도지역"),
+      use_zone: tag(block, "landUse", "useZone", "용도지역"),
       area_sqm: area,
       deal_amount_manwon: amount,
       deal_year: year,

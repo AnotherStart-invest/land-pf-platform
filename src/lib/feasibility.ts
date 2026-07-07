@@ -45,6 +45,94 @@ export const ZONE_RULES: ZoneRule[] = [
   { name: "농림지역", bcr: 0.2, far: 0.8 },
 ];
 
+/**
+ * API가 주는 용도지역 명칭을 ZONE_RULES와 매칭.
+ * "계획관리" ↔ "계획관리지역", 공백 등 표기 차이를 흡수한다.
+ */
+export function findZoneRule(name: string | null | undefined): ZoneRule | null {
+  if (!name) return null;
+  const n = name.replace(/\s/g, "");
+  return (
+    ZONE_RULES.find((z) => z.name === n) ??
+    ZONE_RULES.find((z) => z.name === `${n}지역`) ??
+    ZONE_RULES.find((z) => n.startsWith(z.name.replace(/지역$/, ""))) ??
+    null
+  );
+}
+
+/** 개발 상품 유형별 참고 기본값 (모두 수정 가능한 초기값) */
+export interface ProductType {
+  name: string;
+  /** 평당 건축비 기본값 (만원, 연면적 기준) */
+  constCostPerPyeong: number;
+  /** 분양가능면적 비율 기본값 */
+  salableRatio: number;
+  /** 사업기간 기본값 (개월) */
+  periodMonths: number;
+  /** 기타 사업경비율 기본값 */
+  miscCostRatio: number;
+  /** 통상 입지 가능한 용도지역 키워드 (경고 표시용, 법적 판단 아님) */
+  zoneKeywords: string[];
+  note: string;
+}
+
+export const PRODUCT_TYPES: ProductType[] = [
+  {
+    name: "아파트",
+    constCostPerPyeong: 750,
+    salableRatio: 0.75,
+    periodMonths: 36,
+    miscCostRatio: 0.12,
+    zoneKeywords: ["주거", "준주거"],
+    note: "공용면적 비중이 커서 분양가능면적 비율이 낮고, 인허가·분양 일정으로 사업기간이 김",
+  },
+  {
+    name: "오피스텔",
+    constCostPerPyeong: 700,
+    salableRatio: 0.7,
+    periodMonths: 30,
+    miscCostRatio: 0.12,
+    zoneKeywords: ["상업", "준주거", "준공업"],
+    note: "상업지역 고용적률 활용형. 전용률이 낮아 분양가능면적 비율도 낮게 설정",
+  },
+  {
+    name: "지식산업센터",
+    constCostPerPyeong: 600,
+    salableRatio: 0.8,
+    periodMonths: 30,
+    miscCostRatio: 0.1,
+    zoneKeywords: ["공업", "준공업"],
+    note: "공업지역 위주. 기준층 반복 설계로 평당 건축비가 상대적으로 낮음",
+  },
+  {
+    name: "물류센터",
+    constCostPerPyeong: 450,
+    salableRatio: 0.9,
+    periodMonths: 24,
+    miscCostRatio: 0.1,
+    zoneKeywords: ["공업", "계획관리"],
+    note: "계획관리지역 대형 필지형. 층고가 높은 대신 마감이 단순해 평당 건축비 낮음. 매출은 분양이 아닌 통매각 기준으로 해석",
+  },
+  {
+    name: "타운하우스/단독",
+    constCostPerPyeong: 800,
+    salableRatio: 0.95,
+    periodMonths: 18,
+    miscCostRatio: 0.08,
+    zoneKeywords: ["주거", "계획관리", "녹지"],
+    note: "저층 저밀. 연면적 대부분이 분양 대상이라 분양가능면적 비율이 높음",
+  },
+  {
+    name: "근린생활시설",
+    constCostPerPyeong: 650,
+    salableRatio: 0.75,
+    periodMonths: 24,
+    miscCostRatio: 0.1,
+    zoneKeywords: ["상업", "주거", "계획관리"],
+    note: "상가·업무 복합 소규모 개발",
+  },
+];
+
 export interface FeasibilityInput {
   /** 대지면적 (평) */
   landAreaPyeong: number;

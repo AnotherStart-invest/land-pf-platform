@@ -4,6 +4,8 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   ZONE_RULES,
+  PRODUCT_TYPES,
+  findZoneRule,
   calcFeasibility,
   FeasibilityInput,
 } from "@/lib/feasibility";
@@ -46,23 +48,30 @@ function NumField({
 
 function CalculatorInner() {
   const sp = useSearchParams();
-  const initialZone = ZONE_RULES.find((z) => z.name === sp.get("zone"));
+  // API 용도지역 명칭("계획관리" 등)과 법정 명칭("계획관리지역")의 표기 차이를 흡수해 매칭
+  const initialZone = findZoneRule(sp.get("zone"));
+  const initialProduct = PRODUCT_TYPES[0];
 
   const [zoneName, setZoneName] = useState(initialZone?.name ?? "계획관리지역");
   const zone = ZONE_RULES.find((z) => z.name === zoneName)!;
+  const [productName, setProductName] = useState(initialProduct.name);
+  const product = PRODUCT_TYPES.find((p) => p.name === productName)!;
 
   const [input, setInput] = useState<FeasibilityInput>({
     landAreaPyeong: Number(sp.get("area")) || 500,
     far: (initialZone ?? ZONE_RULES.find((z) => z.name === "계획관리지역")!).far,
-    salableRatio: 0.8,
+    salableRatio: initialProduct.salableRatio,
     landPricePerPyeong: Number(sp.get("landPrice")) || 300,
-    constCostPerPyeong: 700,
+    constCostPerPyeong: initialProduct.constCostPerPyeong,
     salePricePerPyeong: 1300,
-    miscCostRatio: 0.1,
+    miscCostRatio: initialProduct.miscCostRatio,
     loanRatio: 0.6,
     interestRate: 0.065,
-    periodMonths: 24,
+    periodMonths: initialProduct.periodMonths,
   });
+
+  // 상품-용도지역 통상 입지 불일치 경고 (법적 판단이 아닌 참고용)
+  const zoneMismatch = !product.zoneKeywords.some((k) => zoneName.includes(k));
 
   const set = <K extends keyof FeasibilityInput>(k: K, v: FeasibilityInput[K]) =>
     setInput((prev) => ({ ...prev, [k]: v }));
@@ -86,7 +95,38 @@ function CalculatorInner() {
       <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
         {/* 입력 */}
         <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-zinc-700">토지 및 건축 조건</h2>
+          <h2 className="text-sm font-semibold text-zinc-700">개발 상품 유형</h2>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs text-zinc-500">상품 유형 (선택 시 건축비·분양비율·경비율·사업기간 기본값 적용)</span>
+            <select
+              className="rounded border border-zinc-300 px-2 py-1.5"
+              value={productName}
+              onChange={(e) => {
+                const p = PRODUCT_TYPES.find((x) => x.name === e.target.value)!;
+                setProductName(p.name);
+                setInput((prev) => ({
+                  ...prev,
+                  constCostPerPyeong: p.constCostPerPyeong,
+                  salableRatio: p.salableRatio,
+                  miscCostRatio: p.miscCostRatio,
+                  periodMonths: p.periodMonths,
+                }));
+              }}
+            >
+              {PRODUCT_TYPES.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </label>
+          <p className="text-xs leading-relaxed text-zinc-400">{product.note}</p>
+          {zoneMismatch && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+              ⚠ {productName}은(는) 통상 {product.zoneKeywords.join("·")} 계열 용도지역에서 검토되는 상품입니다.
+              현재 선택된 &lsquo;{zoneName}&rsquo;에서는 건축이 제한되거나 별도 인허가 검토가 필요할 수 있습니다.
+            </p>
+          )}
+
+          <h2 className="pt-2 text-sm font-semibold text-zinc-700">토지 및 건축 조건</h2>
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-xs text-zinc-500">용도지역</span>
             <select

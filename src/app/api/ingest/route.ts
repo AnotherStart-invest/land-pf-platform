@@ -38,12 +38,23 @@ export async function GET(req: NextRequest) {
         fetched += rows.length;
         if (rows.length === 0) continue;
 
+        // 같은 배치 안에 자연키가 겹치는 행(완전 동일 신고 건)이 있으면
+        // ON CONFLICT DO UPDATE가 실패하므로 선 중복 제거
+        const seen = new Set<string>();
+        const deduped = rows.filter((r) => {
+          const key = [r.lawd_cd, r.umd_nm, r.jibun, r.deal_year, r.deal_month, r.deal_day, r.area_sqm, r.deal_amount_manwon].join("|");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
         const { error, count } = await db
           .from("land_transactions")
-          .upsert(rows, {
+          .upsert(deduped, {
             onConflict:
               "lawd_cd,umd_nm,jibun,deal_year,deal_month,deal_day,area_sqm,deal_amount_manwon",
-            ignoreDuplicates: true,
+            // 재적재 시 기존 행도 갱신 (용도지역 등 필드 백필 목적)
+            ignoreDuplicates: false,
             count: "exact",
           });
         if (error) throw new Error(`DB upsert 실패: ${error.message}`);
