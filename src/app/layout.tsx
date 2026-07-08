@@ -3,9 +3,23 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LandScope — 토지 실거래 데이터 · 사업수지 분석",
+  metadataBase: new URL("https://land-pf-platform-kappa.vercel.app"),
+  title: "랜드스코프 LandScope — 토지 실거래 조회 · PF 사업수지 분석",
   description:
-    "국토교통부 실거래 신고 자료 기반 토지 마켓 데이터 조회 및 개발사업 초기 검토용 약식 사업수지 분석",
+    "랜드스코프(LandScope)는 국토교통부 실거래 자료 기반으로 화성·평택 토지 거래를 조회하고 개발사업 약식 사업수지를 산출하는 검토 도구입니다.",
+  keywords: [
+    "랜드스코프", "LandScope", "토지 실거래가", "토지 시세",
+    "사업수지 분석", "부동산 PF", "개발사업 사업성", "화성 토지", "평택 토지",
+  ],
+  openGraph: {
+    title: "랜드스코프 LandScope — 토지 실거래 조회 · PF 사업수지 분석",
+    description:
+      "국토교통부 실거래 자료 기반 토지 거래 조회 및 약식 사업수지 산출 도구",
+    url: "https://land-pf-platform-kappa.vercel.app",
+    siteName: "LandScope",
+    locale: "ko_KR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
