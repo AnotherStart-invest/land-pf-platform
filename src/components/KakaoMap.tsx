@@ -125,7 +125,12 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
       el.innerHTML =
         `<b>${shortName}</b><span class="rounded-full bg-white/25 px-1 num">${e.count}</span>` +
         `<span class="hidden group-hover:inline"> 평당 ${e.avgPricePerPyeong.toLocaleString()}만</span>`;
-      el.onclick = () => onSelectDong?.(e.dong);
+      el.onclick = () => {
+        onSelectDong?.(e.dong);
+        // 동네 전체가 보이는 배율로 이동
+        map.setLevel(6);
+        map.panTo(e.pos);
+      };
       el.title = `${e.dong} — ${e.count}건 · 평균 평당 ${e.avgPricePerPyeong.toLocaleString()}만원`;
 
       const overlay = new window.kakao.maps.CustomOverlay({
@@ -195,7 +200,9 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
       label.setMap(mapObj.current);
 
       focusShapes.current = [circle, label];
-      mapObj.current.setLevel(3);
+      // 필지 특정이 불가하므로 동네 전체가 보이는 배율로 (리 단위는 더 넓게)
+      const dongToken = focus.query.split(/\s+/).pop() ?? "";
+      mapObj.current.setLevel(dongToken.endsWith("리") ? 7 : 6);
       mapObj.current.panTo(pos);
     })();
     return () => {

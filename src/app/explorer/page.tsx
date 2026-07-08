@@ -113,6 +113,9 @@ export default function ExplorerPage() {
     if (pricesPerPyeong.length === 0) return null;
     return {
       count: pricesPerPyeong.length,
+      avgPricePerPyeong: Math.round(
+        pricesPerPyeong.reduce((a, b) => a + b, 0) / pricesPerPyeong.length
+      ),
       medianPricePerPyeong: Math.round(median(pricesPerPyeong)),
       medianAreaPyeong: Math.round(median(areas)),
     };
@@ -239,19 +242,22 @@ export default function ExplorerPage() {
         </div>
       </div>
 
-      {/* 우측: 지도 + 상세 패널 */}
+      {/* 우측: 위 = 지도(항상 확보), 아래 = 컨텍스트 패널 1개 (거래 상세 > 지역 요약) */}
       <div className="flex min-h-[400px] w-full flex-col gap-2.5 lg:w-[460px]">
-        <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
+        <div className="min-h-[300px] flex-1 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
           <KakaoMap
             regionQuery={`${region.province} ${region.name}`}
             rows={rows}
-            onSelectDong={setDongFilter}
+            onSelectDong={(dong) => {
+              setDongFilter(dong);
+              setSelected(null);
+            }}
             onRegionDetect={handleRegionDetect}
             focus={mapFocus}
           />
         </div>
-        {dongFilter && dongStats && (
-          <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+        {!selected && dongFilter && dongStats && (
+          <div className="max-h-[45%] shrink-0 overflow-auto rounded-xl border border-slate-100 bg-white shadow-sm p-4">
             <div className="mb-3 flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-semibold tracking-[0.15em] text-emerald-600">AREA SUMMARY</p>
@@ -259,18 +265,22 @@ export default function ExplorerPage() {
               </div>
               <button className="text-slate-300 hover:text-slate-500" onClick={() => setDongFilter("")}>✕</button>
             </div>
-            <dl className="grid grid-cols-3 divide-x divide-slate-100 text-center">
+            <dl className="grid grid-cols-4 divide-x divide-slate-100 text-center">
               <div className="px-1">
                 <dt className="text-[11px] text-slate-500">거래건수</dt>
-                <dd className="num mt-0.5 text-[15px] font-semibold text-slate-900">{dongStats.count}건</dd>
+                <dd className="num mt-0.5 text-[14px] font-semibold text-slate-900">{dongStats.count}건</dd>
+              </div>
+              <div className="px-1">
+                <dt className="text-[11px] text-slate-500">평균 평당가</dt>
+                <dd className="num mt-0.5 text-[14px] font-semibold text-slate-900">{dongStats.avgPricePerPyeong.toLocaleString()}만</dd>
               </div>
               <div className="px-1">
                 <dt className="text-[11px] text-slate-500">중위 평당가</dt>
-                <dd className="num mt-0.5 text-[15px] font-semibold text-slate-900">{dongStats.medianPricePerPyeong.toLocaleString()}만</dd>
+                <dd className="num mt-0.5 text-[14px] font-semibold text-slate-900">{dongStats.medianPricePerPyeong.toLocaleString()}만</dd>
               </div>
               <div className="px-1">
                 <dt className="text-[11px] text-slate-500">중위 면적</dt>
-                <dd className="num mt-0.5 text-[15px] font-semibold text-slate-900">{dongStats.medianAreaPyeong.toLocaleString()}평</dd>
+                <dd className="num mt-0.5 text-[14px] font-semibold text-slate-900">{dongStats.medianAreaPyeong.toLocaleString()}평</dd>
               </div>
             </dl>
             <Link
@@ -288,7 +298,7 @@ export default function ExplorerPage() {
           </div>
         )}
         {selected && (
-          <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
+          <div className="max-h-[45%] shrink-0 overflow-auto rounded-xl border border-slate-100 bg-white shadow-sm p-4">
             <div className="mb-3 flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-semibold tracking-[0.15em] text-emerald-600">PARCEL DETAIL</p>
