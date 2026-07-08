@@ -18,6 +18,8 @@ interface Props {
   onSelectDong?: (umdNm: string) => void;
   /** 선택 거래 포커스 — 법정동 근사 위치에 면적 규모 원 표시 */
   focus?: { query: string; areaSqm: number; label: string } | null;
+  /** 지도 이동 멈춤 시 중심 좌표의 시군구 감지 콜백 (법정동 코드 5자리, 시도+시군구명) */
+  onRegionDetect?: (lawdCd5: string, fullName: string) => void;
 }
 
 interface DongEntry {
@@ -37,7 +39,7 @@ function maxOverlaysForLevel(level: number): number {
 }
 
 /** 읍면동 단위로 거래를 집계해 지도에 오버레이로 표시 (줌 레벨에 따라 개수 조절) */
-export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Props) {
+export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onRegionDetect }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
   const overlays = useRef<any[]>([]);
@@ -46,6 +48,8 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Pro
   const geocodeCache = useRef<Map<string, any>>(new Map());
   const [ready, setReady] = useState(false);
   const [district, setDistrict] = useState(true);
+  /** 지도 조작으로 권역이 바뀐 직후에는 프로그램적 재센터링을 억제 */
+  const suppressRecenterUntil = useRef(0);
   const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
 
   // SDK 로드
@@ -123,6 +127,9 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Pro
       level: 9,
     });
     window.kakao.maps.event.addListener(mapObj.current, "zoom_changed", renderOverlays);
+    if (process.env.NODE_ENV === "development") {
+      (window as unknown as Record<string, unknown>).__map = mapObj.current;
+    }
   }, [ready, renderOverlays]);
 
   // 지적편집도 오버레이 (확대 시 필지 경계·용도지역 표시)
@@ -177,9 +184,10 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Pro
     };
   }, [ready, focus, geocode]);
 
-  // 권역 변경 시 지오코딩으로 중심 이동
+  // 권역 변경 시 지오코딩으로 중심 이동 (지도 조작으로 감지된 변경이면 억제)
   useEffect(() => {
     if (!ready || !mapObj.current) return;
+    if (Date.now() < suppressRecenterUntil.current) return;
     let cancelled = false;
     (async () => {
       const pos = await geocode(regionQuery);
@@ -189,6 +197,35 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Pro
       cancelled = true;
     };
   }, [ready, regionQuery, geocode]);
+
+  // 지도 이동 멈춤(idle) 시 중심 좌표의 시군구를 역지오코딩으로 감지
+  useEffect(() => {
+    if (!ready || !mapObj.current || !onRegionDetect) return;
+    const map = mapObj.current;
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    let timer: ReturnType<typeof setTimeout>;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const c = map.getCenter();
+        geocoder.coord2RegionCode(c.getLng(), c.getLat(), (result: any[], status: string) => {
+          if (status !== window.kakao.maps.services.Status.OK) return;
+          const b = result.find((r) => r.region_type === "B") ?? result[0];
+          if (!b?.code) return;
+          suppressRecenterUntil.current = Date.now() + 3000;
+          onRegionDetect(
+            String(b.code).slice(0, 5),
+            `${b.region_1depth_name ?? ""} ${b.region_2depth_name ?? ""}`.trim()
+          );
+        });
+      }, 400);
+    };
+    window.kakao.maps.event.addListener(map, "idle", handler);
+    return () => {
+      clearTimeout(timer);
+      window.kakao.maps.event.removeListener(map, "idle", handler);
+    };
+  }, [ready, onRegionDetect]);
 
   // 거래 데이터 → 동별 집계 → 지오코딩(캐시) → 렌더
   useEffect(() => {

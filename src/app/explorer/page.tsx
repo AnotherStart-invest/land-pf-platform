@@ -60,6 +60,22 @@ export default function ExplorerPage() {
     load();
   }, [load]);
 
+  // 지도 이동으로 감지된 시군구로 자동 전환 (코드 → 이름 순 매칭)
+  const handleRegionDetect = useCallback((cd5: string, fullName: string) => {
+    setRegion((cur) => {
+      if (cur.lawdCd === cd5) return cur;
+      const norm = fullName.replace(/\s/g, "");
+      const found =
+        REGIONS.find((r) => r.lawdCd === cd5) ??
+        REGIONS.find((r) => norm.includes(r.name.replace(/\s/g, "")));
+      if (found && found.lawdCd !== cur.lawdCd) {
+        setDongFilter("");
+        return found;
+      }
+      return cur;
+    });
+  }, []);
+
   const visibleRows = useMemo(
     () => (dongFilter ? rows.filter((r) => r.umd_nm === dongFilter) : rows),
     [rows, dongFilter]
@@ -217,6 +233,7 @@ export default function ExplorerPage() {
             regionQuery={`${region.province} ${region.name}`}
             rows={rows}
             onSelectDong={setDongFilter}
+            onRegionDetect={handleRegionDetect}
             focus={
               selected
                 ? {
