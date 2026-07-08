@@ -12,8 +12,8 @@ declare global {
 }
 
 interface Props {
-  center: { lat: number; lng: number };
-  regionName: string;
+  /** 지오코딩 쿼리 접두어 (예: "경기 화성시 만세구") */
+  regionQuery: string;
   rows: LandTransaction[];
   onSelectDong?: (umdNm: string) => void;
 }
@@ -35,7 +35,7 @@ function maxOverlaysForLevel(level: number): number {
 }
 
 /** 읍면동 단위로 거래를 집계해 지도에 오버레이로 표시 (줌 레벨에 따라 개수 조절) */
-export default function KakaoMap({ center, regionName, rows, onSelectDong }: Props) {
+export default function KakaoMap({ regionQuery, rows, onSelectDong }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
   const overlays = useRef<any[]>([]);
@@ -57,6 +57,22 @@ export default function KakaoMap({ center, regionName, rows, onSelectDong }: Pro
     script.onload = () => window.kakao.maps.load(() => setReady(true));
     document.head.appendChild(script);
   }, [appKey]);
+
+  const geocode = useCallback((addr: string) => {
+    return new Promise<any>((resolve) => {
+      const cached = geocodeCache.current.get(addr);
+      if (cached !== undefined) return resolve(cached);
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      geocoder.addressSearch(addr, (result: any[], status: string) => {
+        const pos =
+          status === window.kakao.maps.services.Status.OK && result.length > 0
+            ? new window.kakao.maps.LatLng(Number(result[0].y), Number(result[0].x))
+            : null;
+        geocodeCache.current.set(addr, pos);
+        resolve(pos);
+      });
+    });
+  }, []);
 
   /** 현재 줌 레벨 기준으로 오버레이 다시 그림 */
   const renderOverlays = useCallback(() => {
@@ -99,17 +115,24 @@ export default function KakaoMap({ center, regionName, rows, onSelectDong }: Pro
   useEffect(() => {
     if (!ready || !mapRef.current || mapObj.current) return;
     mapObj.current = new window.kakao.maps.Map(mapRef.current, {
-      center: new window.kakao.maps.LatLng(center.lat, center.lng),
+      center: new window.kakao.maps.LatLng(37.5665, 126.978), // 초기값 — 지오코딩 후 이동
       level: 9,
     });
     window.kakao.maps.event.addListener(mapObj.current, "zoom_changed", renderOverlays);
-  }, [ready, center, renderOverlays]);
+  }, [ready, renderOverlays]);
 
-  // 권역 변경 시 중심 이동
+  // 권역 변경 시 지오코딩으로 중심 이동
   useEffect(() => {
-    if (!mapObj.current) return;
-    mapObj.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
-  }, [center]);
+    if (!ready || !mapObj.current) return;
+    let cancelled = false;
+    (async () => {
+      const pos = await geocode(regionQuery);
+      if (!cancelled && pos) mapObj.current.setCenter(pos);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, regionQuery, geocode]);
 
   // 거래 데이터 → 동별 집계 → 지오코딩(캐시) → 렌더
   useEffect(() => {
@@ -126,26 +149,11 @@ export default function KakaoMap({ center, regionName, rows, onSelectDong }: Pro
       byDong.set(r.umd_nm, cur);
     }
 
-    const geocoder = new window.kakao.maps.services.Geocoder();
-    const geocode = (addr: string) =>
-      new Promise<any>((resolve) => {
-        const cached = geocodeCache.current.get(addr);
-        if (cached !== undefined) return resolve(cached);
-        geocoder.addressSearch(addr, (result: any[], status: string) => {
-          const pos =
-            status === window.kakao.maps.services.Status.OK && result.length > 0
-              ? new window.kakao.maps.LatLng(Number(result[0].y), Number(result[0].x))
-              : null;
-          geocodeCache.current.set(addr, pos);
-          resolve(pos);
-        });
-      });
-
     let cancelled = false;
     (async () => {
       const entries: DongEntry[] = [];
       for (const [dong, agg] of byDong) {
-        const pos = await geocode(`${regionName} ${dong}`);
+        const pos = await geocode(`${regionQuery} ${dong}`);
         if (pos) {
           entries.push({
             dong,
@@ -163,17 +171,15 @@ export default function KakaoMap({ center, regionName, rows, onSelectDong }: Pro
     return () => {
       cancelled = true;
     };
-  }, [ready, rows, regionName, renderOverlays]);
+  }, [ready, rows, regionQuery, renderOverlays, geocode]);
 
   if (!appKey) {
     return (
-      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
+      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
         NEXT_PUBLIC_KAKAO_MAP_APP_KEY가 설정되지 않아 지도를 표시할 수 없습니다.
-        <br />
-        Kakao Developers에서 JavaScript 키를 발급받아 .env.local에 추가하세요.
       </div>
     );
   }
 
-  return <div ref={mapRef} className="h-full w-full rounded-xl" />;
+  return <div ref={mapRef} className="h-full w-full" />;
 }

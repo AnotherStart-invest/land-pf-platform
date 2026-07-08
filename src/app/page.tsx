@@ -28,7 +28,10 @@ export default function Home() {
 
       <dl className="mt-14 divide-y divide-slate-100 border-y border-slate-100 text-[13px]">
         {[
-          ["커버리지", REGIONS.map((r) => r.name).join(" · ")],
+          [
+            "커버리지",
+            `수도권 전체 ${REGIONS.length}개 시군구 — 서울 ${REGIONS.filter((r) => r.province === "서울").length} · 인천 ${REGIONS.filter((r) => r.province === "인천").length} · 경기 ${REGIONS.filter((r) => r.province === "경기").length}`,
+          ],
           ["데이터", "국토교통부 토지 매매 실거래가 (공공데이터포털 Open API) · 일 단위 자동 갱신"],
           ["조회", "지도 기반 읍면동별 거래 집계(건수·중위 평당가), 기간·면적·지목 필터"],
           [

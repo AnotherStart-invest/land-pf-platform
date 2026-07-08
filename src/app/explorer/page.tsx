@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { REGIONS } from "@/lib/config";
+import { REGIONS, PROVINCES, DEFAULT_REGION } from "@/lib/config";
 import { LandTransaction } from "@/lib/supabase";
 import { sqmToPyeong } from "@/lib/feasibility";
 import KakaoMap from "@/components/KakaoMap";
@@ -19,7 +19,7 @@ const inputCls =
 const labelCls = "text-[11px] font-medium text-slate-500";
 
 export default function ExplorerPage() {
-  const [region, setRegion] = useState(REGIONS[0]);
+  const [region, setRegion] = useState(DEFAULT_REGION);
   const [fromYm, setFromYm] = useState("");
   const [toYm, setToYm] = useState("");
   const [minArea, setMinArea] = useState("");
@@ -100,13 +100,17 @@ export default function ExplorerPage() {
               className={inputCls}
               value={region.lawdCd}
               onChange={(e) => {
-                setRegion(REGIONS.find((r) => r.lawdCd === e.target.value) ?? REGIONS[0]);
+                setRegion(REGIONS.find((r) => r.lawdCd === e.target.value) ?? DEFAULT_REGION);
                 setDongFilter("");
                 setSelected(null);
               }}
             >
-              {REGIONS.map((r) => (
-                <option key={r.lawdCd} value={r.lawdCd}>{r.name}</option>
+              {PROVINCES.map((prov) => (
+                <optgroup key={prov} label={prov}>
+                  {REGIONS.filter((r) => r.province === prov).map((r) => (
+                    <option key={r.lawdCd} value={r.lawdCd}>{r.name}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -207,7 +211,7 @@ export default function ExplorerPage() {
       {/* 우측: 지도 + 상세 패널 */}
       <div className="flex min-h-[400px] w-full flex-col gap-2.5 lg:w-[460px]">
         <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
-          <KakaoMap center={region.center} regionName={region.name} rows={rows} onSelectDong={setDongFilter} />
+          <KakaoMap regionQuery={`${region.province} ${region.name}`} rows={rows} onSelectDong={setDongFilter} />
         </div>
         {dongFilter && dongStats && (
           <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
