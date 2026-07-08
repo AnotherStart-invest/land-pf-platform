@@ -76,11 +76,30 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
           status === window.kakao.maps.services.Status.OK && result.length > 0
             ? new window.kakao.maps.LatLng(Number(result[0].y), Number(result[0].x))
             : null;
-        geocodeCache.current.set(addr, pos);
+        // 실패(null)는 캐시하지 않음 — 일시적 호출 제한이 영구 실패로 굳는 것 방지
+        if (pos) geocodeCache.current.set(addr, pos);
         resolve(pos);
       });
     });
   }, []);
+
+  /**
+   * 폴백 지오코딩 — 주 쿼리 실패 시 구 단위 토큰을 뺀 쿼리로 재시도.
+   * 예: "경기 화성시 병점구 진안동" 실패 → "경기 화성시 진안동"
+   */
+  const geocodeWithFallback = useCallback(
+    async (primary: string) => {
+      let pos = await geocode(primary);
+      if (pos) return pos;
+      const tokens = primary.split(/\s+/);
+      if (tokens.length >= 4) {
+        const fallback = [...tokens.slice(0, -2), tokens[tokens.length - 1]].join(" ");
+        pos = await geocode(fallback);
+      }
+      return pos;
+    },
+    [geocode]
+  );
 
   /** 현재 줌 레벨 기준으로 오버레이 다시 그림 */
   const renderOverlays = useCallback(() => {
@@ -149,7 +168,7 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
 
     let cancelled = false;
     (async () => {
-      const pos = await geocode(focus.query);
+      const pos = await geocodeWithFallback(focus.query);
       if (cancelled || !pos) return;
 
       const radius = Math.max(Math.sqrt(focus.areaSqm / Math.PI), 8);
@@ -182,7 +201,7 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
     return () => {
       cancelled = true;
     };
-  }, [ready, focus, geocode]);
+  }, [ready, focus, geocodeWithFallback]);
 
   // 권역 변경 시 지오코딩으로 중심 이동 (지도 조작으로 감지된 변경이면 억제)
   useEffect(() => {
@@ -246,7 +265,7 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
     (async () => {
       const entries: DongEntry[] = [];
       for (const [dong, agg] of byDong) {
-        const pos = await geocode(`${regionQuery} ${dong}`);
+        const pos = await geocodeWithFallback(`${regionQuery} ${dong}`);
         if (pos) {
           entries.push({
             dong,
@@ -264,7 +283,7 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong, focus, onReg
     return () => {
       cancelled = true;
     };
-  }, [ready, rows, regionQuery, renderOverlays, geocode]);
+  }, [ready, rows, regionQuery, renderOverlays, geocodeWithFallback]);
 
   if (!appKey) {
     return (

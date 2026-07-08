@@ -60,6 +60,19 @@ export default function ExplorerPage() {
     load();
   }, [load]);
 
+  // 선택 거래의 지도 포커스 — 렌더링마다 객체가 재생성되지 않도록 메모
+  const mapFocus = useMemo(
+    () =>
+      selected
+        ? {
+            query: `${region.province} ${region.name} ${selected.umd_nm ?? ""}`,
+            areaSqm: selected.area_sqm,
+            label: `${selected.umd_nm ?? ""} ${selected.jibun ?? ""} · ${sqmToPyeong(selected.area_sqm).toFixed(0)}평 규모`,
+          }
+        : null,
+    [selected, region]
+  );
+
   // 지도 이동으로 감지된 시군구로 자동 전환 (코드 → 이름 순 매칭)
   const handleRegionDetect = useCallback((cd5: string, fullName: string) => {
     setRegion((cur) => {
@@ -234,15 +247,7 @@ export default function ExplorerPage() {
             rows={rows}
             onSelectDong={setDongFilter}
             onRegionDetect={handleRegionDetect}
-            focus={
-              selected
-                ? {
-                    query: `${region.province} ${region.name} ${selected.umd_nm ?? ""}`,
-                    areaSqm: selected.area_sqm,
-                    label: `${selected.umd_nm ?? ""} ${selected.jibun ?? ""} · ${sqmToPyeong(selected.area_sqm).toFixed(0)}평 규모`,
-                  }
-                : null
-            }
+            focus={mapFocus}
           />
         </div>
         {dongFilter && dongStats && (
