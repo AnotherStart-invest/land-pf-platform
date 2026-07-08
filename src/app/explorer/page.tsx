@@ -168,6 +168,7 @@ export default function ExplorerPage() {
                 <th className="px-3 py-2 font-medium">소재지</th>
                 <th className="px-3 py-2 font-medium">지번</th>
                 <th className="px-3 py-2 font-medium">지목</th>
+                <th className="px-3 py-2 font-medium">용도지역</th>
                 <th className="px-3 py-2 text-right font-medium">면적(평)</th>
                 <th className="px-3 py-2 text-right font-medium">거래금액</th>
                 <th className="px-3 py-2 text-right font-medium">평당가</th>
@@ -190,6 +191,7 @@ export default function ExplorerPage() {
                     <td className="px-3 py-1.5 text-slate-800">{r.umd_nm}</td>
                     <td className="px-3 py-1.5 text-slate-600">{r.jibun ?? "비공개"}</td>
                     <td className="px-3 py-1.5 text-slate-600">{r.jimok}</td>
+                    <td className="px-3 py-1.5 text-slate-600">{r.use_zone ?? "–"}</td>
                     <td className="px-3 py-1.5 text-right text-slate-800">{pyeong.toFixed(0)}</td>
                     <td className="px-3 py-1.5 text-right font-semibold text-slate-900">{fmtManwon(r.deal_amount_manwon)}</td>
                     <td className="px-3 py-1.5 text-right text-slate-600">{Math.round(perPyeong).toLocaleString()}만</td>
@@ -198,7 +200,7 @@ export default function ExplorerPage() {
               })}
               {!loading && visibleRows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-12 text-center text-[13px] text-slate-400">
+                  <td colSpan={8} className="px-3 py-12 text-center text-[13px] text-slate-400">
                     조회 조건에 해당하는 거래가 없습니다.
                   </td>
                 </tr>
