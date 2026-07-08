@@ -4,10 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { REGIONS, PROVINCES, DEFAULT_REGION } from "@/lib/config";
 import { LandTransaction } from "@/lib/supabase";
-import { sqmToPyeong } from "@/lib/feasibility";
+import { sqmToPyeong, ZONE_RULES } from "@/lib/feasibility";
 import KakaoMap from "@/components/KakaoMap";
 
 const JIMOK_OPTIONS = ["전", "답", "대", "임야", "잡종지", "과수원", "공장용지", "창고용지"];
+
+/** 용도지역 필터 옵션 — 법정 용도지역 + 데이터에 존재하는 기타 구분 */
+const USE_ZONE_OPTIONS = [
+  ...ZONE_RULES.map((z) => z.name),
+  "개발제한구역",
+  "자연환경보전",
+  "용도미지정",
+];
 
 function fmtManwon(v: number): string {
   if (v >= 10000) return `${(v / 10000).toFixed(1)}억`;
@@ -25,6 +33,7 @@ export default function ExplorerPage() {
   const [minArea, setMinArea] = useState("");
   const [maxArea, setMaxArea] = useState("");
   const [jimok, setJimok] = useState("");
+  const [useZone, setUseZone] = useState("");
   const [dongFilter, setDongFilter] = useState("");
 
   const [rows, setRows] = useState<LandTransaction[]>([]);
@@ -43,6 +52,7 @@ export default function ExplorerPage() {
       if (minArea) p.set("minArea", String(Number(minArea) * 3.3058)); // 평 → ㎡
       if (maxArea) p.set("maxArea", String(Number(maxArea) * 3.3058));
       if (jimok) p.set("jimok", jimok);
+      if (useZone) p.set("useZone", useZone);
       const res = await fetch(`/api/land?${p}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
@@ -54,7 +64,7 @@ export default function ExplorerPage() {
     } finally {
       setLoading(false);
     }
-  }, [region, fromYm, toYm, minArea, maxArea, jimok]);
+  }, [region, fromYm, toYm, minArea, maxArea, jimok, useZone]);
 
   useEffect(() => {
     load();
@@ -168,6 +178,15 @@ export default function ExplorerPage() {
               <option value="">전체</option>
               {JIMOK_OPTIONS.map((j) => (
                 <option key={j} value={j}>{j}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className={labelCls}>용도지역</span>
+            <select id="useZoneFilter" className={inputCls} value={useZone} onChange={(e) => setUseZone(e.target.value)}>
+              <option value="">전체</option>
+              {USE_ZONE_OPTIONS.map((z) => (
+                <option key={z} value={z}>{z}</option>
               ))}
             </select>
           </label>

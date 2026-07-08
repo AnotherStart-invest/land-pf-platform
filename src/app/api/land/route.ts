@@ -59,6 +59,9 @@ export async function GET(req: NextRequest) {
   const jimok = p.get("jimok");
   if (jimok) q = q.eq("jimok", jimok);
 
+  const useZone = p.get("useZone");
+  if (useZone) q = q.eq("use_zone", useZone);
+
   const { data, error, count } = await q
     .order("deal_year", { ascending: false })
     .order("deal_month", { ascending: false })
