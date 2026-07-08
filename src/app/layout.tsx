@@ -11,6 +11,11 @@ export const metadata: Metadata = {
     "랜드스코프", "LandScope", "토지 실거래가", "토지 시세",
     "사업수지 분석", "부동산 PF", "개발사업 사업성", "화성 토지", "평택 토지",
   ],
+  verification: {
+    other: {
+      "naver-site-verification": "af44cae012f0f0e178ac9abfd5de5d46461c4a15",
+    },
+  },
   openGraph: {
     title: "랜드스코프 LandScope — 토지 실거래 조회 · PF 사업수지 분석",
     description:
