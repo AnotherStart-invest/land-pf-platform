@@ -213,7 +213,20 @@ export default function ExplorerPage() {
       {/* 우측: 지도 + 상세 패널 */}
       <div className="flex min-h-[400px] w-full flex-col gap-2.5 lg:w-[460px]">
         <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-100 shadow-sm">
-          <KakaoMap regionQuery={`${region.province} ${region.name}`} rows={rows} onSelectDong={setDongFilter} />
+          <KakaoMap
+            regionQuery={`${region.province} ${region.name}`}
+            rows={rows}
+            onSelectDong={setDongFilter}
+            focus={
+              selected
+                ? {
+                    query: `${region.province} ${region.name} ${selected.umd_nm ?? ""}`,
+                    areaSqm: selected.area_sqm,
+                    label: `${selected.umd_nm ?? ""} ${selected.jibun ?? ""} · ${sqmToPyeong(selected.area_sqm).toFixed(0)}평 규모`,
+                  }
+                : null
+            }
+          />
         </div>
         {dongFilter && dongStats && (
           <div className="rounded-xl border border-slate-100 bg-white shadow-sm p-4">
@@ -277,6 +290,9 @@ export default function ExplorerPage() {
               <dt className="text-slate-500">거래유형</dt>
               <dd className="text-right text-slate-800">{selected.dealing_type ?? "–"}{selected.share_dealing ? " (지분)" : ""}</dd>
             </dl>
+            <p className="mt-2 text-[11px] text-slate-400">
+              지도 표시는 법정동 기준 근사 위치 · 규모 (지번 일부 비공개)
+            </p>
             <Link
               href={{
                 pathname: "/calculator",

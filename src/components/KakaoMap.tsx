@@ -16,6 +16,8 @@ interface Props {
   regionQuery: string;
   rows: LandTransaction[];
   onSelectDong?: (umdNm: string) => void;
+  /** 선택 거래 포커스 — 법정동 근사 위치에 면적 규모 원 표시 */
+  focus?: { query: string; areaSqm: number; label: string } | null;
 }
 
 interface DongEntry {
@@ -35,13 +37,15 @@ function maxOverlaysForLevel(level: number): number {
 }
 
 /** 읍면동 단위로 거래를 집계해 지도에 오버레이로 표시 (줌 레벨에 따라 개수 조절) */
-export default function KakaoMap({ regionQuery, rows, onSelectDong }: Props) {
+export default function KakaoMap({ regionQuery, rows, onSelectDong, focus }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
   const overlays = useRef<any[]>([]);
+  const focusShapes = useRef<any[]>([]);
   const entriesRef = useRef<DongEntry[]>([]);
   const geocodeCache = useRef<Map<string, any>>(new Map());
   const [ready, setReady] = useState(false);
+  const [district, setDistrict] = useState(true);
   const appKey = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY;
 
   // SDK 로드
@@ -121,6 +125,58 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong }: Props) {
     window.kakao.maps.event.addListener(mapObj.current, "zoom_changed", renderOverlays);
   }, [ready, renderOverlays]);
 
+  // 지적편집도 오버레이 (확대 시 필지 경계·용도지역 표시)
+  useEffect(() => {
+    if (!ready || !mapObj.current) return;
+    const type = window.kakao.maps.MapTypeId.USE_DISTRICT;
+    if (district) mapObj.current.addOverlayMapTypeId(type);
+    else mapObj.current.removeOverlayMapTypeId(type);
+  }, [ready, district]);
+
+  // 선택 거래 포커스 — 법정동 근사 위치로 확대 이동 + 면적 규모 원
+  useEffect(() => {
+    if (!ready || !mapObj.current) return;
+    focusShapes.current.forEach((s) => s.setMap(null));
+    focusShapes.current = [];
+    if (!focus) return;
+
+    let cancelled = false;
+    (async () => {
+      const pos = await geocode(focus.query);
+      if (cancelled || !pos) return;
+
+      const radius = Math.max(Math.sqrt(focus.areaSqm / Math.PI), 8);
+      const circle = new window.kakao.maps.Circle({
+        center: pos,
+        radius,
+        strokeWeight: 2,
+        strokeColor: "#047857",
+        strokeOpacity: 0.9,
+        fillColor: "#10B981",
+        fillOpacity: 0.25,
+      });
+      circle.setMap(mapObj.current);
+
+      const el = document.createElement("div");
+      el.className =
+        "rounded bg-emerald-800/95 text-white text-[11px] px-2 py-1 shadow whitespace-nowrap";
+      el.innerText = focus.label;
+      const label = new window.kakao.maps.CustomOverlay({
+        position: pos,
+        content: el,
+        yAnchor: 2.4,
+      });
+      label.setMap(mapObj.current);
+
+      focusShapes.current = [circle, label];
+      mapObj.current.setLevel(3);
+      mapObj.current.panTo(pos);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, focus, geocode]);
+
   // 권역 변경 시 지오코딩으로 중심 이동
   useEffect(() => {
     if (!ready || !mapObj.current) return;
@@ -181,5 +237,19 @@ export default function KakaoMap({ regionQuery, rows, onSelectDong }: Props) {
     );
   }
 
-  return <div ref={mapRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={mapRef} className="h-full w-full" />
+      <button
+        onClick={() => setDistrict((d) => !d)}
+        className={`absolute right-2 top-2 z-10 rounded border px-2.5 py-1.5 text-[11px] font-semibold shadow-sm transition-colors ${
+          district
+            ? "border-emerald-600 bg-emerald-700 text-white"
+            : "border-slate-300 bg-white/95 text-slate-600"
+        }`}
+      >
+        지적편집도
+      </button>
+    </div>
+  );
 }
