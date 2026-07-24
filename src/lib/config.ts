@@ -18,6 +18,7 @@ export interface Region {
 const 서울 = "서울";
 const 인천 = "인천";
 const 경기 = "경기";
+const 충남 = "충남";
 
 export const REGIONS: Region[] = [
   // 서울 25구
@@ -106,9 +107,26 @@ export const REGIONS: Region[] = [
   { lawdCd: "41800", name: "연천군", province: 경기 },
   { lawdCd: "41820", name: "가평군", province: 경기 },
   { lawdCd: "41830", name: "양평군", province: 경기 },
+  // 충남 16개 시군구 (천안·아산 중심 개발권역)
+  { lawdCd: "44131", name: "천안시 동남구", province: 충남 },
+  { lawdCd: "44133", name: "천안시 서북구", province: 충남 },
+  { lawdCd: "44150", name: "공주시", province: 충남 },
+  { lawdCd: "44180", name: "보령시", province: 충남 },
+  { lawdCd: "44200", name: "아산시", province: 충남 },
+  { lawdCd: "44210", name: "서산시", province: 충남 },
+  { lawdCd: "44230", name: "논산시", province: 충남 },
+  { lawdCd: "44250", name: "계룡시", province: 충남 },
+  { lawdCd: "44270", name: "당진시", province: 충남 },
+  { lawdCd: "44710", name: "금산군", province: 충남 },
+  { lawdCd: "44760", name: "부여군", province: 충남 },
+  { lawdCd: "44770", name: "서천군", province: 충남 },
+  { lawdCd: "44790", name: "청양군", province: 충남 },
+  { lawdCd: "44800", name: "홍성군", province: 충남 },
+  { lawdCd: "44810", name: "예산군", province: 충남 },
+  { lawdCd: "44825", name: "태안군", province: 충남 },
 ];
 
-export const PROVINCES = [서울, 인천, 경기];
+export const PROVINCES = [서울, 인천, 경기, 충남];
 
 export const DEFAULT_REGION = REGIONS.find((r) => r.lawdCd === "41591")!;
 
